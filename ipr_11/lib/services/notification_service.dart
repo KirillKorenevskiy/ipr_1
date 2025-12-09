@@ -7,6 +7,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:ipr_11/main.dart';
 import 'package:ipr_11/utils/firebase_options.dart';
 
+import '../utils/app_constants.dart';
 import '../utils/app_logger.dart';
 
 @pragma('vm:entry-point')
@@ -26,9 +27,9 @@ class NotificationService {
     await _firebaseMessaging.requestPermission();
 
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'high_importance_channel',
-      'High Importance Notifications',
-      description: 'This channel is used for important notifications.',
+      AppConstants.highImportanceChannelId,
+      AppConstants.highImportanceChannelName,
+      description: AppConstants.notificationChannelDescription,
       importance: Importance.high,
     );
 
@@ -38,7 +39,7 @@ class NotificationService {
 
     await _localNotifications.initialize(
       const InitializationSettings(
-        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        android: AndroidInitializationSettings(AppConstants.notificationIcon),
         iOS: DarwinInitializationSettings(),
       ),
       onDidReceiveNotificationResponse: (NotificationResponse notificationResponse) {
@@ -65,15 +66,15 @@ class NotificationService {
               channel.id,
               channel.name,
               channelDescription: channel.description,
-              icon: '@mipmap/ic_launcher',
+              icon: AppConstants.notificationIcon,
             ),
           ),
-          payload: 'remote_notification_tapped',
+          payload: AppConstants.remoteNotificationTappedPayload,
         );
       }
       final FlutterBackgroundService service = FlutterBackgroundService();
 
-      service.invoke('start_web_socket');
+      service.invoke(AppConstants.startWebSocketEvent);
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
@@ -95,7 +96,7 @@ class NotificationService {
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     final FlutterBackgroundService service = FlutterBackgroundService();
 
-    service.invoke('start_web_socket');
+    service.invoke(AppConstants.startWebSocketEvent);
 
     AppLogger.info('Handled a background message: ${message.messageId}');
   }

@@ -41,7 +41,7 @@ class WebSocketService {
       AppLogger.info('[WebSocketService] WebSocket connected.');
 
       _webSocketPingTimer?.cancel();
-      _webSocketPingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _webSocketPingTimer = Timer.periodic(AppConstants.oneSecondDuration, (timer) {
         _counter++;
         if (_channel != null) {
           _channel!.sink.add('$_counter');
@@ -54,19 +54,19 @@ class WebSocketService {
 
           _messagesCache.add(message);
 
-          _service.invoke('update', {'message': message});
+          _service.invoke(AppConstants.updateEvent, {AppConstants.messageKey: message});
 
           if (_service is AndroidServiceInstance) {
             (_service).isForegroundService().then((isForeground) {
               if (isForeground) {
                 _flutterLocalNotificationsPlugin.show(
                   _notificationId,
-                  'WebSocket Active',
-                  'Received: $message',
+                  AppConstants.webSocketActiveNotificationTitle,
+                  '${AppConstants.webSocketActiveNotificationContentPrefix}$message',
                   NotificationDetails(
                     android: AndroidNotificationDetails(
                       _notificationChannelId,
-                      'MY FOREGROUND SERVICE',
+                      AppConstants.foregroundServiceTitle,
                       icon: '@mipmap/ic_launcher',
                       ongoing: true,
                     ),
@@ -78,27 +78,26 @@ class WebSocketService {
         },
         onDone: () {
           AppLogger.warning('[WebSocketService] WebSocket connection closed. Reconnecting in 5 seconds...');
-
-          _isConnected = false;
-          _subscription?.cancel();
-          _webSocketPingTimer?.cancel();
-          Future.delayed(const Duration(seconds: 5), connect);
+          _handleWebSocketDisconnection();
         },
         onError: (error) {
           AppLogger.error('[WebSocketService] WebSocket error: $error. Reconnecting in 5 seconds...');
-
-          _isConnected = false;
-          _subscription?.cancel();
-          _webSocketPingTimer?.cancel();
-          Future.delayed(const Duration(seconds: 5), connect);
+          _handleWebSocketDisconnection();
         },
       );
     } catch (e) {
       AppLogger.error('[WebSocketService] WebSocket connection failed: $e. Retrying in 5 seconds...');
 
       _isConnected = false;
-      Future.delayed(const Duration(seconds: 5), connect);
+      Future.delayed(AppConstants.fiveSecondDuration, connect);
     }
+  }
+
+  void _handleWebSocketDisconnection() {
+    _isConnected = false;
+    _subscription?.cancel();
+    _webSocketPingTimer?.cancel();
+    Future.delayed(AppConstants.fiveSecondDuration, connect);
   }
 
   void disconnect() {
